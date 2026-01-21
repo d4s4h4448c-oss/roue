@@ -111,7 +111,7 @@
             overflow: hidden;
             box-shadow: 0 0 0 10px var(--primary-color), 0 0 30px rgba(0, 0, 0, 0.2);
             transition: transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99);
-            background-color: #f8f9fa;
+            background-color: white;
         }
 
         .wheel-center {
@@ -155,26 +155,27 @@
             border-top: 40px solid var(--danger-color);
         }
 
-        .wheel-segment-line {
+        .segment-line {
             position: absolute;
             width: 2px;
             height: 50%;
             top: 0;
             left: 50%;
-            background-color: var(--primary-color);
+            background-color: #666;
             transform-origin: 50% 100%;
             z-index: 5;
         }
 
-        .wheel-pseudo-text {
+        .pseudo-label {
             position: absolute;
-            color: var(--text-color);
+            color: var(--primary-color);
             font-weight: bold;
-            font-size: 16px;
-            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.8);
+            font-size: 18px;
             white-space: nowrap;
             pointer-events: none;
             z-index: 10;
+            text-align: center;
+            transform-origin: 0 0;
         }
 
         .controls {
@@ -333,6 +334,10 @@
             
             header h1 {
                 font-size: 2rem;
+            }
+            
+            .pseudo-label {
+                font-size: 14px;
             }
         }
     </style>
@@ -575,37 +580,42 @@
             spinBtn.disabled = false;
             const segmentAngle = 360 / enabledPseudos.length;
             
-            // Créer les lignes de séparation
+            // Créer les lignes de séparation et les labels
             enabledPseudos.forEach((pseudo, index) => {
+                const angle = index * segmentAngle;
+                
                 // Ligne de séparation
                 const line = document.createElement('div');
-                line.className = 'wheel-segment-line';
-                line.style.transform = `rotate(${index * segmentAngle}deg)`;
+                line.className = 'segment-line';
+                line.style.transform = `rotate(${angle}deg)`;
                 wheel.appendChild(line);
                 
-                // Texte du pseudo
-                const text = document.createElement('div');
-                text.className = 'wheel-pseudo-text';
-                text.textContent = pseudo.name;
-                text.style.fontSize = Math.max(14, 200 / enabledPseudos.length) + 'px';
-                text.style.color = pseudo.color;
+                // Label du pseudo
+                const label = document.createElement('div');
+                label.className = 'pseudo-label';
+                label.textContent = pseudo.name;
+                label.style.color = pseudo.color;
+                label.style.fontSize = Math.max(16, 200 / enabledPseudos.length) + 'px';
                 
-                // Positionner le texte au milieu du segment
-                const middleAngle = (index * segmentAngle) + (segmentAngle / 2);
+                // Positionner le label au milieu du segment
+                const labelAngle = angle + (segmentAngle / 2);
                 const radius = 180; // Distance du centre
-                const x = Math.cos((middleAngle - 90) * Math.PI / 180) * radius;
-                const y = Math.sin((middleAngle - 90) * Math.PI / 180) * radius;
                 
-                text.style.left = `calc(50% + ${x}px)`;
-                text.style.top = `calc(50% + ${y}px)`;
-                text.style.transform = `translate(-50%, -50%) rotate(${middleAngle}deg)`;
+                label.style.left = '50%';
+                label.style.top = '50%';
+                label.style.transform = `
+                    translate(-50%, -50%)
+                    rotate(${labelAngle}deg)
+                    translate(0, -${radius * 0.65}px)
+                    rotate(-${labelAngle}deg)
+                `;
                 
-                wheel.appendChild(text);
+                wheel.appendChild(label);
             });
 
             // Ajouter la dernière ligne de séparation
             const lastLine = document.createElement('div');
-            lastLine.className = 'wheel-segment-line';
+            lastLine.className = 'segment-line';
             lastLine.style.transform = `rotate(${enabledPseudos.length * segmentAngle}deg)`;
             wheel.appendChild(lastLine);
 
