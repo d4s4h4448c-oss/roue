@@ -622,7 +622,7 @@
             spinCenter.innerHTML = 'TOURNEZ!';
         }
 
-        // CORRECTION : Tourner la roue avec la VRAIE bonne logique
+        // CORRECTION FINALE : La bonne logique
         function spinWheel() {
             if (isSpinning || pseudos.length === 0) return;
             
@@ -634,30 +634,40 @@
             spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours...';
             spinCenter.innerHTML = '...';
             
-            // 1. Sélectionner un pseudo aléatoire
-            const randomIndex = Math.floor(Math.random() * enabledPseudos.length);
-            const selectedPseudo = enabledPseudos[randomIndex];
+            // 1. D'abord, on choisit un pseudo au hasard
+            const selectedIndex = Math.floor(Math.random() * enabledPseudos.length);
+            const selectedPseudo = enabledPseudos[selectedIndex];
             const segmentAngle = 360 / enabledPseudos.length;
             
-            // 2. Calculer l'angle d'arrêt
-            // On veut que la flèche s'arrête quelque part dans le segment sélectionné
-            // Le segment va de [index * segmentAngle] à [(index + 1) * segmentAngle]
-            // On choisit un point au hasard dans ce segment
-            const minAngle = randomIndex * segmentAngle;
-            const maxAngle = (randomIndex + 1) * segmentAngle;
-            const stopAngle = minAngle + (Math.random() * segmentAngle);
+            // 2. Maintenant, on calcule l'angle pour que la flèche pointe sur ce pseudo
+            // IMPORTANT : La roue tourne, donc si on veut que la flèche pointe sur le segment X,
+            // il faut que ce segment vienne se positionner sous la flèche
             
-            // 3. Faire plusieurs tours complets + l'angle d'arrêt
+            // La flèche est à 0° (en haut)
+            // Le segment sélectionné commence à : selectedIndex * segmentAngle
+            // On veut que la flèche pointe quelque part dans ce segment
+            
+            // On choisit un point au hasard dans le segment (pas sur la ligne)
+            const minAngle = selectedIndex * segmentAngle;
+            const maxAngle = (selectedIndex + 1) * segmentAngle;
+            // On évite les bords (pour être sûr d'être dans le segment, pas sur une ligne)
+            const targetPosition = minAngle + (segmentAngle * 0.1) + (Math.random() * segmentAngle * 0.8);
+            
+            // 3. On fait plusieurs tours + l'angle pour arriver à cette position
             const spins = 5; // Nombre de tours complets
-            const totalRotation = spins * 360 + stopAngle;
+            // L'angle total que la roue doit tourner
+            const totalRotation = spins * 360 + targetPosition;
             
-            // 4. Inverser le sens (puisque la roue tourne, pas la flèche)
-            // Si la roue tourne de X degrés, la position relative est -X
-            const targetAngle = -totalRotation;
+            // 4. Mais attention ! Quand la roue tourne de X degrés,
+            // tout bouge de X degrés dans le sens inverse
+            // Donc pour que le segment arrive à la position targetPosition,
+            // la roue doit tourner de -targetPosition
+            const wheelRotation = -(totalRotation % 360);
             
             // Animer la rotation
-            wheel.style.transform = `rotate(${currentRotation + targetAngle}deg)`;
-            currentRotation += targetAngle;
+            const finalRotation = currentRotation + wheelRotation;
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+            currentRotation = finalRotation;
             
             // Afficher le résultat après l'animation
             setTimeout(() => {
