@@ -566,7 +566,7 @@
             }
         }
 
-        // Mettre à jour la roue - VERSION SIMPLE AVEC LIGNES ET TEXTES SEULEMENT
+        // Mettre à jour la roue
         function updateWheel() {
             wheel.innerHTML = '';
             const enabledPseudos = pseudos.filter(p => p.enabled);
@@ -622,7 +622,7 @@
             spinCenter.innerHTML = 'TOURNEZ!';
         }
 
-        // Tourner la roue
+        // CORRECTION : Tourner la roue avec la bonne logique de sélection
         function spinWheel() {
             if (isSpinning || pseudos.length === 0) return;
             
@@ -637,11 +637,16 @@
             // Sélectionner un pseudo aléatoire
             const randomIndex = Math.floor(Math.random() * enabledPseudos.length);
             const selectedPseudo = enabledPseudos[randomIndex];
-            const anglePerItem = 360 / enabledPseudos.length;
+            const segmentAngle = 360 / enabledPseudos.length;
             
-            // Calculer l'angle pour aligner le segment sélectionné avec le pointeur
-            const spins = 5;
-            const targetAngle = spins * 360 + (360 - (randomIndex * anglePerItem)) - (anglePerItem / 2);
+            // CALCUL CORRIGÉ : Le segment qui doit arriver en haut (à la flèche) est celui qui est sélectionné
+            // La flèche est à 0° (en haut), donc on doit faire tourner le segment sélectionné pour qu'il arrive à 0°
+            // Mais comme la roue tourne dans le sens horaire, on ajuste l'angle
+            
+            const spins = 5; // Nombre de tours complets
+            // Le segment sélectionné doit arriver à la position 0° (en haut)
+            // On calcule l'angle nécessaire pour que ce segment arrive à 0°
+            const targetAngle = spins * 360 + (360 - (randomIndex * segmentAngle));
             
             // Animer la rotation
             wheel.style.transform = `rotate(${currentRotation + targetAngle}deg)`;
