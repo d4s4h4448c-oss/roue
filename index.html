@@ -110,7 +110,6 @@
             overflow: hidden;
             box-shadow: 0 0 0 10px var(--primary-color), 0 0 30px rgba(0, 0, 0, 0.2);
             transition: transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99);
-            background: white;
         }
 
         .wheel-center {
@@ -313,37 +312,51 @@
             }
         }
 
-        /* Styles pour les segments de la roue - SIMPLIFIES */
-        .segment {
+        /* Styles pour la roue - Version SIMPLIFIÉE et ALIGNÉE */
+        .segment-container {
             position: absolute;
             width: 100%;
             height: 100%;
             transform-origin: center;
-            clip-path: polygon(50% 50%, 100% 0, 100% 100%);
-            z-index: 1;
         }
 
-        .segment-border {
+        .segment {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            transform-origin: center;
-            pointer-events: none;
-            z-index: 2;
+            width: 50%;
+            height: 50%;
+            top: 0;
+            left: 50%;
+            transform-origin: 0% 100%;
+            background-color: var(--segment-color);
+            clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
         }
 
         .segment-text {
             position: absolute;
-            top: 50%;
-            left: 75%;
+            top: 40%;
+            left: 65%;
             transform-origin: 0 0;
-            transform: rotate(90deg) translate(0, 10px);
+            transform: rotate(45deg);
             color: white;
             font-weight: bold;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             white-space: nowrap;
-            z-index: 3;
+            z-index: 10;
             font-size: 18px;
+            pointer-events: none;
+        }
+
+        .separator {
+            position: absolute;
+            width: 3px;
+            height: 50%;
+            top: 0;
+            left: 50%;
+            background-color: white;
+            transform-origin: 50% 100%;
+            transform: translateX(-1.5px);
+            z-index: 5;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -429,9 +442,7 @@
         // Couleurs vives pour les segments
         const colors = [
             '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
-            '#7209B7', '#3A86FF', '#FB5607', '#8338EC', '#FF006E',
-            '#8AC926', '#1982C4', '#6A4C93', '#F15BB5', '#9B5DE5',
-            '#00BBF9', '#00F5D4', '#FF9E00', '#FF5C8D', '#0DCAF0'
+            '#7209B7', '#3A86FF', '#FB5607', '#8338EC', '#FF006E'
         ];
 
         // Éléments DOM
@@ -465,10 +476,7 @@
 
         // Ajouter des pseudos d'exemple
         function addExamplePseudos() {
-            const examples = [
-                "JeanClaude", "Gemini", "Alice", "Bob", "Charlie", 
-                "David", "Eve", "Frank", "Grace", "Henry"
-            ];
+            const examples = ["JeanClaude", "Gemini", "Alice", "Bob", "Charlie"];
             
             examples.forEach(name => {
                 pseudos.push({
@@ -575,68 +583,52 @@
             }
         }
 
-        // Mettre à jour la roue avec segments colorés
+        // Mettre à jour la roue - Version SIMPLIFIÉE et PARFAITEMENT ALIGNÉE
         function updateWheel() {
             wheel.innerHTML = '';
             const enabledPseudos = pseudos.filter(p => p.enabled);
             
             if (enabledPseudos.length === 0) {
-                wheel.style.background = '#f0f0f0';
                 document.getElementById('spin-btn').disabled = true;
                 spinCenter.innerHTML = 'AJOUTEZ<br>DES PSEUDOS';
                 return;
             }
             
             document.getElementById('spin-btn').disabled = false;
-            const anglePerSegment = 360 / enabledPseudos.length;
+            const segmentAngle = 360 / enabledPseudos.length;
             
-            // Créer les segments
+            // Créer les segments et les lignes de séparation
             enabledPseudos.forEach((pseudo, index) => {
-                const segmentAngle = index * anglePerSegment;
+                const rotation = index * segmentAngle;
                 
-                // Segment principal (la part de gâteau)
+                // 1. Créer le segment coloré
+                const container = document.createElement('div');
+                container.className = 'segment-container';
+                container.style.setProperty('--segment-color', pseudo.color);
+                container.style.transform = `rotate(${rotation}deg)`;
+                
                 const segment = document.createElement('div');
                 segment.className = 'segment';
-                segment.style.transform = `rotate(${segmentAngle}deg)`;
-                segment.style.backgroundColor = pseudo.color;
+                container.appendChild(segment);
                 
-                // Ajouter le texte dans le segment
+                // 2. Ajouter le texte du pseudo
                 const text = document.createElement('div');
                 text.className = 'segment-text';
                 text.textContent = pseudo.name;
-                text.style.fontSize = Math.max(16, 220 / enabledPseudos.length) + 'px';
+                text.style.fontSize = Math.max(16, 200 / enabledPseudos.length) + 'px';
+                container.appendChild(text);
                 
-                // Positionner le texte dans le segment
-                const textAngle = anglePerSegment / 2;
-                text.style.transform = `rotate(${textAngle}deg) translate(30px, 0)`;
-                text.style.color = pseudo.color;
+                wheel.appendChild(container);
                 
-                segment.appendChild(text);
-                wheel.appendChild(segment);
-                
-                // Ajouter une ligne de séparation entre les segments
-                const border = document.createElement('div');
-                border.className = 'segment-border';
-                border.style.transform = `rotate(${segmentAngle}deg)`;
-                border.style.borderLeft = `3px solid ${darkenColor(pseudo.color, 30)}`;
-                wheel.appendChild(border);
+                // 3. Ajouter une ligne de séparation APRÈS chaque segment
+                const separator = document.createElement('div');
+                separator.className = 'separator';
+                separator.style.transform = `rotate(${rotation + segmentAngle}deg)`;
+                wheel.appendChild(separator);
             });
             
             // Réinitialiser le texte du centre
             spinCenter.innerHTML = 'TOURNEZ!';
-        }
-
-        // Fonction pour assombrir une couleur
-        function darkenColor(color, percent) {
-            let r = parseInt(color.substring(1, 3), 16);
-            let g = parseInt(color.substring(3, 5), 16);
-            let b = parseInt(color.substring(5, 7), 16);
-            
-            r = Math.floor(r * (100 - percent) / 100);
-            g = Math.floor(g * (100 - percent) / 100);
-            b = Math.floor(b * (100 - percent) / 100);
-            
-            return `rgb(${r}, ${g}, ${b})`;
         }
 
         // Tourner la roue
