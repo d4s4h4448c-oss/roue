@@ -130,6 +130,7 @@
             color: var(--primary-color);
             font-size: 1.2rem;
             border: 5px solid var(--primary-color);
+            cursor: pointer;
         }
 
         .wheel-pointer {
@@ -183,11 +184,6 @@
             background-color: var(--accent-color);
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(88, 101, 242, 0.3);
-        }
-
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
         }
 
         .btn-danger {
@@ -316,53 +312,31 @@
             }
         }
 
+        /* Styles pour les segments de la roue */
         .segment {
-            position: absolute;
-            width: 50%;
-            height: 50%;
-            transform-origin: 100% 100%;
-            left: 0;
-            top: 0;
-            clip-path: polygon(100% 0, 100% 100%, 0 100%);
-        }
-
-        .segment-content {
             position: absolute;
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            padding-left: 20%;
-            box-sizing: border-box;
+            transform-origin: center;
+            clip-path: polygon(50% 50%, 100% 0, 100% 100%);
         }
 
         .segment-text {
+            position: absolute;
+            top: 50%;
+            left: 65%;
+            transform-origin: 0 0;
+            transform: rotate(90deg) translate(10px, 0);
             color: white;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            transform: rotate(45deg);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
             white-space: nowrap;
-            font-size: 16px;
-            max-width: 80%;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            z-index: 2;
         }
 
-        .segment-border {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .segment-border::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 2px;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.5);
+        .selected-segment {
+            filter: brightness(1.3);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5) inset;
         }
     </style>
 </head>
@@ -396,7 +370,7 @@
                 <h2><i class="fas fa-dharmachakra"></i> Roue de Sélection</h2>
                 <div class="wheel-wrapper">
                     <div id="wheel"></div>
-                    <div class="wheel-center">TOURNEZ!</div>
+                    <div class="wheel-center" id="spin-center">TOURNEZ!</div>
                     <div class="wheel-pointer"></div>
                 </div>
                 
@@ -444,8 +418,9 @@
         let removeAfterSpin = false;
         let isSpinning = false;
         let currentRotation = 0;
+        let lastSelectedPseudo = null;
 
-        // Couleurs pour les segments
+        // Couleurs vives pour les segments
         const colors = [
             '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
             '#7209B7', '#3A86FF', '#FB5607', '#8338EC', '#FF006E',
@@ -459,6 +434,7 @@
         const pseudoListContainer = document.getElementById('pseudo-list-container');
         const selectedPseudoDisplay = document.getElementById('selected-pseudo');
         const historyList = document.getElementById('history-list');
+        const spinCenter = document.getElementById('spin-center');
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -471,6 +447,7 @@
             document.getElementById('clear-all-btn').addEventListener('click', clearAllPseudos);
             document.getElementById('spin-btn').addEventListener('click', spinWheel);
             document.getElementById('reset-wheel-btn').addEventListener('click', resetWheel);
+            spinCenter.addEventListener('click', spinWheel);
             document.getElementById('keep-after-spin').addEventListener('click', () => setRemoveAfterSpin(false));
             document.getElementById('remove-after-spin').addEventListener('click', () => setRemoveAfterSpin(true));
             
@@ -484,12 +461,10 @@
         function addExamplePseudos() {
             const examples = [
                 "JeanClaude", "Gemini", "Alice", "Bob", "Charlie", 
-                "David", "Eve", "Frank", "Grace", "Henry",
-                "Ivan", "Julia", "Kevin", "Luna", "Mike"
+                "David", "Eve", "Frank", "Grace", "Henry"
             ];
             
-            // Prendre seulement 12 exemples maximum pour une bonne visibilité
-            examples.slice(0, 12).forEach(name => {
+            examples.forEach(name => {
                 addPseudo(name);
             });
             
@@ -565,14 +540,8 @@
         function changeColor(id) {
             const pseudo = pseudos.find(p => p.id === id);
             if (pseudo) {
-                // Générer une nouvelle couleur qui n'est pas déjà utilisée
-                let newColor;
-                do {
-                    const hue = Math.floor(Math.random() * 360);
-                    newColor = `hsl(${hue}, 70%, 60%)`;
-                } while (pseudos.some(p => p.color === newColor && p.id !== id));
-                
-                pseudo.color = newColor;
+                const hue = Math.floor(Math.random() * 360);
+                pseudo.color = `hsl(${hue}, 80%, 60%)`;
                 updatePseudoList();
                 updateWheel();
                 saveToLocalStorage();
@@ -600,7 +569,7 @@
             }
         }
 
-        // Mettre à jour la roue avec des compartiments visibles
+        // Mettre à jour la roue avec des segments bien visibles
         function updateWheel() {
             wheel.innerHTML = '';
             const enabledPseudos = pseudos.filter(p => p.enabled);
@@ -608,39 +577,65 @@
             if (enabledPseudos.length === 0) {
                 wheel.style.background = '#f0f0f0';
                 document.getElementById('spin-btn').disabled = true;
-                wheel.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #999; font-weight: bold;">Ajoutez des pseudos<br>pour commencer</div>';
+                spinCenter.innerHTML = 'AJOUTEZ<br>DES PSEUDOS';
                 return;
             }
             
             document.getElementById('spin-btn').disabled = false;
-            const angle = 360 / enabledPseudos.length;
+            const anglePerSegment = 360 / enabledPseudos.length;
             
             enabledPseudos.forEach((pseudo, index) => {
-                // Créer le segment (part de gâteau)
+                // Créer le segment
                 const segment = document.createElement('div');
                 segment.className = 'segment';
-                segment.style.transform = `rotate(${index * angle}deg)`;
+                segment.style.transform = `rotate(${index * anglePerSegment}deg)`;
                 segment.style.backgroundColor = pseudo.color;
+                segment.dataset.pseudoId = pseudo.id;
                 
-                // Créer le contenu du segment avec le pseudo
-                const content = document.createElement('div');
-                content.className = 'segment-content';
-                
+                // Ajouter le texte du pseudo
                 const text = document.createElement('div');
                 text.className = 'segment-text';
                 text.textContent = pseudo.name;
-                text.style.fontSize = Math.max(14, 240 / enabledPseudos.length) + 'px';
+                text.style.fontSize = Math.max(14, 200 / enabledPseudos.length) + 'px';
+                text.style.transform = `rotate(${anglePerSegment/2}deg) translate(20px, 0)`;
                 
-                content.appendChild(text);
-                segment.appendChild(content);
+                segment.appendChild(text);
+                wheel.appendChild(segment);
                 
                 // Ajouter une bordure entre les segments
                 const border = document.createElement('div');
-                border.className = 'segment-border';
-                segment.appendChild(border);
-                
-                wheel.appendChild(segment);
+                border.style.position = 'absolute';
+                border.style.top = '0';
+                border.style.left = '50%';
+                border.style.width = '2px';
+                border.style.height = '100%';
+                border.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                border.style.transform = `rotate(${index * anglePerSegment}deg)`;
+                border.style.zIndex = '1';
+                wheel.appendChild(border);
             });
+            
+            // Réinitialiser le texte du centre
+            spinCenter.innerHTML = 'TOURNEZ!';
+            
+            // Mettre en évidence le dernier sélectionné si existe
+            if (lastSelectedPseudo) {
+                highlightSelectedSegment(lastSelectedPseudo.id);
+            }
+        }
+
+        // Mettre en évidence un segment sélectionné
+        function highlightSelectedSegment(pseudoId) {
+            // Retirer la sélection précédente
+            document.querySelectorAll('.segment').forEach(segment => {
+                segment.classList.remove('selected-segment');
+            });
+            
+            // Ajouter la sélection au nouveau segment
+            const selectedSegment = document.querySelector(`.segment[data-pseudo-id="${pseudoId}"]`);
+            if (selectedSegment) {
+                selectedSegment.classList.add('selected-segment');
+            }
         }
 
         // Tourner la roue
@@ -654,6 +649,7 @@
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = true;
             spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours...';
+            spinCenter.innerHTML = '...';
             
             // Sélectionner un pseudo aléatoire
             const randomIndex = Math.floor(Math.random() * enabledPseudos.length);
@@ -674,6 +670,10 @@
                 selectedPseudoDisplay.style.color = selectedPseudo.color;
                 selectedPseudoDisplay.style.textShadow = `2px 2px 4px ${selectedPseudo.color}40`;
                 
+                // Mettre en évidence le segment sélectionné
+                lastSelectedPseudo = selectedPseudo;
+                highlightSelectedSegment(selectedPseudo.id);
+                
                 // Ajouter à l'historique
                 addToHistory(selectedPseudo);
                 
@@ -685,6 +685,7 @@
                 isSpinning = false;
                 spinBtn.disabled = false;
                 spinBtn.innerHTML = '<i class="fas fa-play"></i> Tourner la roue';
+                spinCenter.innerHTML = 'TOURNEZ!';
                 showFeedback(`${selectedPseudo.name} a été sélectionné !`);
             }, 4000);
         }
@@ -696,6 +697,12 @@
             selectedPseudoDisplay.textContent = 'La roue n\'a pas encore été tournée';
             selectedPseudoDisplay.style.color = '';
             selectedPseudoDisplay.style.textShadow = '';
+            lastSelectedPseudo = null;
+            
+            // Retirer la sélection des segments
+            document.querySelectorAll('.segment').forEach(segment => {
+                segment.classList.remove('selected-segment');
+            });
         }
 
         // Ajouter à l'historique
@@ -760,11 +767,8 @@
 
         // Afficher un message temporaire
         function showFeedback(message) {
-            // Supprimer tout feedback existant
             const existingFeedback = document.querySelector('.feedback-message');
-            if (existingFeedback) {
-                existingFeedback.remove();
-            }
+            if (existingFeedback) existingFeedback.remove();
             
             const feedback = document.createElement('div');
             feedback.className = 'feedback-message';
@@ -779,36 +783,15 @@
                 box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                 z-index: 1000;
                 font-weight: bold;
-                animation: slideIn 0.3s ease;
             `;
-            
-            // Ajouter l'animation CSS
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100px); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes fadeOut {
-                    from { opacity: 1; }
-                    to { opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
             
             feedback.textContent = message;
             document.body.appendChild(feedback);
             
             setTimeout(() => {
-                feedback.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => {
-                    if (feedback.parentNode) {
-                        feedback.remove();
-                    }
-                    if (style.parentNode) {
-                        style.remove();
-                    }
-                }, 300);
+                feedback.style.opacity = '0';
+                feedback.style.transition = 'opacity 0.3s';
+                setTimeout(() => feedback.remove(), 300);
             }, 2000);
         }
 
