@@ -236,6 +236,8 @@
             border-radius: 50%;
             margin-right: 15px;
             cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
         }
 
         .pseudo-name {
@@ -314,18 +316,53 @@
             }
         }
 
-        .segment-text {
+        .segment {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform-origin: 0 0;
-            text-align: center;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            left: 0;
+            top: 0;
+            clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        }
+
+        .segment-content {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding-left: 20%;
+            box-sizing: border-box;
+        }
+
+        .segment-text {
             color: white;
             font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            transform: rotate(45deg);
             white-space: nowrap;
             font-size: 16px;
+            max-width: 80%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .segment-border {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .segment-border::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
@@ -411,7 +448,9 @@
         // Couleurs pour les segments
         const colors = [
             '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
-            '#7209B7', '#3A86FF', '#FB5607', '#8338EC', '#FF006E'
+            '#7209B7', '#3A86FF', '#FB5607', '#8338EC', '#FF006E',
+            '#8AC926', '#1982C4', '#6A4C93', '#F15BB5', '#9B5DE5',
+            '#00BBF9', '#00F5D4', '#FF9E00', '#FF5C8D', '#0DCAF0'
         ];
 
         // Éléments DOM
@@ -443,18 +482,30 @@
 
         // Ajouter des pseudos d'exemple
         function addExamplePseudos() {
-            const examples = ["JeanClaude", "Gemini", "Alice", "Bob", "Charlie", "David", "Eve"];
-            examples.forEach(name => {
-                pseudos.push({
-                    id: generateId(),
-                    name: name,
-                    color: colors[pseudos.length % colors.length],
-                    enabled: true
-                });
+            const examples = [
+                "JeanClaude", "Gemini", "Alice", "Bob", "Charlie", 
+                "David", "Eve", "Frank", "Grace", "Henry",
+                "Ivan", "Julia", "Kevin", "Luna", "Mike"
+            ];
+            
+            // Prendre seulement 12 exemples maximum pour une bonne visibilité
+            examples.slice(0, 12).forEach(name => {
+                addPseudo(name);
             });
+            
             updatePseudoList();
             updateWheel();
             saveToLocalStorage();
+        }
+
+        // Ajouter un pseudo
+        function addPseudo(name) {
+            pseudos.push({
+                id: generateId(),
+                name: name,
+                color: colors[pseudos.length % colors.length],
+                enabled: true
+            });
         }
 
         // Générer un ID unique
@@ -473,12 +524,7 @@
                 .filter(p => !pseudos.some(existing => existing.name.toLowerCase() === p.toLowerCase()));
             
             newPseudos.forEach(name => {
-                pseudos.push({
-                    id: generateId(),
-                    name: name,
-                    color: colors[pseudos.length % colors.length],
-                    enabled: true
-                });
+                addPseudo(name);
             });
             
             pseudoInput.value = '';
@@ -501,11 +547,11 @@
                 <div class="pseudo-item" data-id="${pseudo.id}">
                     <div style="display: flex; align-items: center;">
                         <div class="pseudo-color" style="background-color: ${pseudo.color};" 
-                             onclick="changeColor('${pseudo.id}')"></div>
+                             onclick="changeColor('${pseudo.id}')" title="Cliquer pour changer la couleur"></div>
                         <span class="pseudo-name">${pseudo.name}</span>
                     </div>
                     <div class="pseudo-actions">
-                        <button onclick="removePseudo('${pseudo.id}')">
+                        <button onclick="removePseudo('${pseudo.id}')" title="Retirer de la roue">
                             <i class="fas fa-times" style="color: var(--danger-color);"></i>
                         </button>
                     </div>
@@ -519,9 +565,14 @@
         function changeColor(id) {
             const pseudo = pseudos.find(p => p.id === id);
             if (pseudo) {
-                // Générer une nouvelle couleur
-                const hue = Math.floor(Math.random() * 360);
-                pseudo.color = `hsl(${hue}, 70%, 60%)`;
+                // Générer une nouvelle couleur qui n'est pas déjà utilisée
+                let newColor;
+                do {
+                    const hue = Math.floor(Math.random() * 360);
+                    newColor = `hsl(${hue}, 70%, 60%)`;
+                } while (pseudos.some(p => p.color === newColor && p.id !== id));
+                
+                pseudo.color = newColor;
                 updatePseudoList();
                 updateWheel();
                 saveToLocalStorage();
@@ -549,7 +600,7 @@
             }
         }
 
-        // Mettre à jour la roue
+        // Mettre à jour la roue avec des compartiments visibles
         function updateWheel() {
             wheel.innerHTML = '';
             const enabledPseudos = pseudos.filter(p => p.enabled);
@@ -557,6 +608,7 @@
             if (enabledPseudos.length === 0) {
                 wheel.style.background = '#f0f0f0';
                 document.getElementById('spin-btn').disabled = true;
+                wheel.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #999; font-weight: bold;">Ajoutez des pseudos<br>pour commencer</div>';
                 return;
             }
             
@@ -564,29 +616,30 @@
             const angle = 360 / enabledPseudos.length;
             
             enabledPseudos.forEach((pseudo, index) => {
-                // Créer le segment
+                // Créer le segment (part de gâteau)
                 const segment = document.createElement('div');
-                segment.style.position = 'absolute';
-                segment.style.width = '100%';
-                segment.style.height = '100%';
-                segment.style.clipPath = `conic-gradient(from ${index * angle}deg at 50% 50%, ${pseudo.color} 0deg ${angle}deg, transparent ${angle}deg)`;
+                segment.className = 'segment';
+                segment.style.transform = `rotate(${index * angle}deg)`;
+                segment.style.backgroundColor = pseudo.color;
                 
-                // Ajouter le texte
+                // Créer le contenu du segment avec le pseudo
+                const content = document.createElement('div');
+                content.className = 'segment-content';
+                
                 const text = document.createElement('div');
                 text.className = 'segment-text';
                 text.textContent = pseudo.name;
+                text.style.fontSize = Math.max(14, 240 / enabledPseudos.length) + 'px';
                 
-                // Positionner le texte horizontalement dans le segment
-                const textAngle = index * angle + angle / 2;
-                const radius = 180; // Distance du centre
-                const x = Math.cos((textAngle - 90) * Math.PI / 180) * radius;
-                const y = Math.sin((textAngle - 90) * Math.PI / 180) * radius;
+                content.appendChild(text);
+                segment.appendChild(content);
                 
-                text.style.transform = `translate(${x}px, ${y}px) rotate(${textAngle}deg)`;
-                text.style.fontSize = Math.max(12, 200 / enabledPseudos.length) + 'px';
+                // Ajouter une bordure entre les segments
+                const border = document.createElement('div');
+                border.className = 'segment-border';
+                segment.appendChild(border);
                 
                 wheel.appendChild(segment);
-                wheel.appendChild(text);
             });
         }
 
@@ -598,7 +651,9 @@
             if (enabledPseudos.length === 0) return;
             
             isSpinning = true;
-            document.getElementById('spin-btn').disabled = true;
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = true;
+            spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours...';
             
             // Sélectionner un pseudo aléatoire
             const randomIndex = Math.floor(Math.random() * enabledPseudos.length);
@@ -617,6 +672,7 @@
             setTimeout(() => {
                 selectedPseudoDisplay.textContent = selectedPseudo.name;
                 selectedPseudoDisplay.style.color = selectedPseudo.color;
+                selectedPseudoDisplay.style.textShadow = `2px 2px 4px ${selectedPseudo.color}40`;
                 
                 // Ajouter à l'historique
                 addToHistory(selectedPseudo);
@@ -627,8 +683,9 @@
                 }
                 
                 isSpinning = false;
-                document.getElementById('spin-btn').disabled = false;
-                showFeedback(`${selectedPseudo.name} sélectionné !`);
+                spinBtn.disabled = false;
+                spinBtn.innerHTML = '<i class="fas fa-play"></i> Tourner la roue';
+                showFeedback(`${selectedPseudo.name} a été sélectionné !`);
             }, 4000);
         }
 
@@ -638,18 +695,26 @@
             currentRotation = 0;
             selectedPseudoDisplay.textContent = 'La roue n\'a pas encore été tournée';
             selectedPseudoDisplay.style.color = '';
+            selectedPseudoDisplay.style.textShadow = '';
         }
 
         // Ajouter à l'historique
         function addToHistory(pseudo) {
-            const time = new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+            const now = new Date();
+            const time = now.getHours().toString().padStart(2, '0') + ':' + 
+                        now.getMinutes().toString().padStart(2, '0');
+            
             history.unshift({
                 name: pseudo.name,
                 color: pseudo.color,
                 time: time
             });
             
-            if (history.length > 10) history.pop();
+            // Garder seulement les 10 derniers
+            if (history.length > 10) {
+                history.pop();
+            }
+            
             updateHistory();
             saveToLocalStorage();
         }
@@ -657,16 +722,19 @@
         // Mettre à jour l'historique
         function updateHistory() {
             if (history.length === 0) {
-                historyList.innerHTML = '<div style="color: #999; text-align: center;">Aucune sélection</div>';
+                historyList.innerHTML = '<div style="color: #999; text-align: center; padding: 10px;">Aucune sélection</div>';
                 return;
             }
             
             let html = '';
             history.forEach(item => {
                 html += `
-                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
-                    <span style="color: ${item.color}; font-weight: bold;">${item.name}</span>
-                    <span style="color: #666;">${item.time}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${item.color};"></div>
+                        <span style="font-weight: bold;">${item.name}</span>
+                    </div>
+                    <span style="color: #666; font-size: 0.9rem;">${item.time}</span>
                 </div>
                 `;
             });
@@ -692,26 +760,55 @@
 
         // Afficher un message temporaire
         function showFeedback(message) {
+            // Supprimer tout feedback existant
+            const existingFeedback = document.querySelector('.feedback-message');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+            
             const feedback = document.createElement('div');
+            feedback.className = 'feedback-message';
             feedback.style.cssText = `
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                background: var(--primary-color);
+                background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
                 color: white;
-                padding: 10px 20px;
+                padding: 12px 24px;
                 border-radius: 10px;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                 z-index: 1000;
                 font-weight: bold;
+                animation: slideIn 0.3s ease;
             `;
+            
+            // Ajouter l'animation CSS
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100px); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+            
             feedback.textContent = message;
             document.body.appendChild(feedback);
             
             setTimeout(() => {
-                feedback.style.opacity = '0';
-                feedback.style.transition = 'opacity 0.3s';
-                setTimeout(() => feedback.remove(), 300);
+                feedback.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    if (feedback.parentNode) {
+                        feedback.remove();
+                    }
+                    if (style.parentNode) {
+                        style.remove();
+                    }
+                }, 300);
             }, 2000);
         }
 
