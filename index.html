@@ -371,13 +371,6 @@
                     <button id="clear-all-btn" class="btn btn-danger">
                         <i class="fas fa-trash-alt"></i> Tout effacer
                     </button>
-                    <button id="export-btn" class="btn btn-secondary">
-                        <i class="fas fa-download"></i> Exporter
-                    </button>
-                    <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">
-                        <i class="fas fa-upload"></i> Importer
-                    </label>
-                    <input type="file" id="import-file" accept=".json" style="display: none;">
                 </div>
 
                 <div id="pseudo-list-container" class="pseudo-list">
@@ -416,14 +409,6 @@
                         </button>
                     </div>
                 </div>
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 10px;">Options de rotation</h3>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <label for="spin-duration" style="flex: 1;">Durée (secondes):</label>
-                        <input type="range" id="spin-duration" min="2" max="8" step="0.5" value="4" style="flex: 2;">
-                        <span id="duration-value" style="flex: 0.5; text-align: center;">4.0</span>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -439,13 +424,12 @@
     </div>
 
     <script>
-        // Variables globales
+        // Variables globales - TOUJOURS initialisées à vide
         let pseudos = [];
         let history = [];
         let removeAfterSpin = false;
         let isSpinning = false;
         let currentRotation = 0;
-        let spinDuration = 4.0;
 
         // Couleurs pour les pseudos dans la liste
         const colors = [
@@ -461,40 +445,23 @@
         const historyList = document.getElementById('history-list');
         const spinCenter = document.getElementById('spin-center');
         const spinBtn = document.getElementById('spin-btn');
-        const spinDurationInput = document.getElementById('spin-duration');
-        const durationValue = document.getElementById('duration-value');
 
-        // Fonction d'échappement HTML
-        function escapeHTML(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Initialisation
+        // Initialisation - NE CHARGE RIEN du localStorage
         document.addEventListener('DOMContentLoaded', function() {
-            loadFromLocalStorage();
+            // Ne pas charger depuis localStorage - toujours partir de zéro
+            // loadFromLocalStorage(); // LIGNE SUPPRIMÉE
+            
             updatePseudoList();
             updateWheel();
             
             // Événements
             document.getElementById('add-pseudos-btn').addEventListener('click', addPseudosFromInput);
             document.getElementById('clear-all-btn').addEventListener('click', clearAllPseudos);
-            document.getElementById('export-btn').addEventListener('click', exportData);
-            document.getElementById('import-file').addEventListener('change', importData);
             spinBtn.addEventListener('click', spinWheel);
             document.getElementById('reset-wheel-btn').addEventListener('click', resetWheel);
             spinCenter.addEventListener('click', spinWheel);
             document.getElementById('keep-after-spin').addEventListener('click', () => setRemoveAfterSpin(false));
             document.getElementById('remove-after-spin').addEventListener('click', () => setRemoveAfterSpin(true));
-            
-            // Gestion de la durée de rotation
-            spinDurationInput.addEventListener('input', function() {
-                spinDuration = parseFloat(this.value);
-                durationValue.textContent = spinDuration.toFixed(1);
-                wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
-                saveToLocalStorage();
-            });
             
             // Ajouter des exemples si vide
             if (pseudos.length === 0) {
@@ -517,7 +484,6 @@
             
             updatePseudoList();
             updateWheel();
-            saveToLocalStorage();
         }
 
         // Générer un ID unique
@@ -547,7 +513,6 @@
             pseudoInput.value = '';
             updatePseudoList();
             updateWheel();
-            saveToLocalStorage();
             showFeedback(`${newPseudos.length} pseudos ajoutés`);
         }
 
@@ -563,12 +528,12 @@
                 html += `
                 <div class="pseudo-item" data-id="${pseudo.id}">
                     <div style="display: flex; align-items: center;">
-                        <div class="pseudo-color" style="background-color: ${escapeHTML(pseudo.color)};" 
-                             onclick="changeColor('${escapeHTML(pseudo.id)}')" title="Cliquer pour changer la couleur"></div>
-                        <span class="pseudo-name">${escapeHTML(pseudo.name)}</span>
+                        <div class="pseudo-color" style="background-color: ${pseudo.color};" 
+                             onclick="changeColor('${pseudo.id}')" title="Cliquer pour changer la couleur"></div>
+                        <span class="pseudo-name">${pseudo.name}</span>
                     </div>
                     <div class="pseudo-actions">
-                        <button onclick="removePseudo('${escapeHTML(pseudo.id)}')" title="Retirer de la roue">
+                        <button onclick="removePseudo('${pseudo.id}')" title="Retirer de la roue">
                             <i class="fas fa-times" style="color: var(--danger-color);"></i>
                         </button>
                     </div>
@@ -586,7 +551,6 @@
                 pseudo.color = `hsl(${hue}, 80%, 60%)`;
                 updatePseudoList();
                 updateWheel();
-                saveToLocalStorage();
             }
         }
 
@@ -595,7 +559,6 @@
             pseudos = pseudos.filter(p => p.id !== id);
             updatePseudoList();
             updateWheel();
-            saveToLocalStorage();
             showFeedback("Pseudo retiré");
         }
 
@@ -604,10 +567,19 @@
             if (pseudos.length === 0) return;
             if (confirm("Effacer tous les pseudos ?")) {
                 pseudos = [];
+                history = []; // Effacer aussi l'historique
                 updatePseudoList();
                 updateWheel();
-                saveToLocalStorage();
-                showFeedback("Tous les pseudos effacés");
+                updateHistory();
+                resetWheel();
+                showFeedback("Tout a été effacé");
+                
+                // Réajouter les exemples après suppression
+                setTimeout(() => {
+                    if (pseudos.length === 0) {
+                        addExamplePseudos();
+                    }
+                }, 100);
             }
         }
 
@@ -681,7 +653,7 @@
             spinCenter.innerHTML = 'TOURNEZ!';
         }
 
-        // Faire tourner la roue (CORRIGÉ)
+        // Faire tourner la roue
         function spinWheel() {
             if (isSpinning || pseudos.length === 0) return;
             
@@ -704,7 +676,7 @@
             void wheel.offsetWidth;
             
             // Réactiver la transition
-            wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+            wheel.style.transition = `transform 4s cubic-bezier(0.2, 0.8, 0.3, 1)`;
             
             // 1. Choisir un segment au hasard
             const selectedIndex = Math.floor(Math.random() * enabledPseudos.length);
@@ -746,7 +718,7 @@
                 spinBtn.innerHTML = '<i class="fas fa-play"></i> Tourner la roue';
                 spinCenter.innerHTML = 'TOURNEZ!';
                 showFeedback(`${selectedPseudo.name} a été sélectionné !`);
-            }, spinDuration * 1000);
+            }, 4000);
         }
 
         // Réinitialiser la roue
@@ -760,7 +732,7 @@
             void wheel.offsetWidth;
             
             // Réactiver la transition
-            wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+            wheel.style.transition = `transform 4s cubic-bezier(0.2, 0.8, 0.3, 1)`;
             
             selectedPseudoDisplay.textContent = 'La roue n\'a pas encore été tournée';
             selectedPseudoDisplay.style.color = '';
@@ -782,7 +754,6 @@
             
             if (history.length > 10) history.pop();
             updateHistory();
-            saveToLocalStorage();
         }
 
         // Mettre à jour l'historique
@@ -798,7 +769,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${item.color};"></div>
-                        <span style="font-weight: bold;">${escapeHTML(item.name)}</span>
+                        <span style="font-weight: bold;">${item.name}</span>
                     </div>
                     <span style="color: #666; font-size: 0.9rem;">${item.time}</span>
                 </div>
@@ -820,67 +791,6 @@
                 keepBtn.className = 'btn btn-primary';
                 removeBtn.className = 'btn btn-secondary';
             }
-            
-            saveToLocalStorage();
-        }
-
-        // Exporter les données
-        function exportData() {
-            const data = {
-                pseudos: pseudos,
-                history: history,
-                removeAfterSpin: removeAfterSpin,
-                spinDuration: spinDuration
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'roue-discord-data.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showFeedback('Données exportées avec succès');
-        }
-
-        // Importer les données
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    pseudos = data.pseudos || [];
-                    history = data.history || [];
-                    removeAfterSpin = data.removeAfterSpin || false;
-                    spinDuration = data.spinDuration || 4.0;
-                    
-                    // Mettre à jour l'UI
-                    spinDurationInput.value = spinDuration;
-                    durationValue.textContent = spinDuration.toFixed(1);
-                    setRemoveAfterSpin(removeAfterSpin);
-                    
-                    updatePseudoList();
-                    updateWheel();
-                    updateHistory();
-                    resetWheel();
-                    saveToLocalStorage();
-                    
-                    showFeedback('Données importées avec succès');
-                } catch (error) {
-                    console.error('Erreur d\'importation:', error);
-                    showFeedback('Erreur: fichier invalide');
-                }
-            };
-            reader.readAsText(file);
-            
-            // Réinitialiser l'input file
-            event.target.value = '';
         }
 
         // Afficher un message temporaire
@@ -913,43 +823,8 @@
             }, 2000);
         }
 
-        // Sauvegarder dans localStorage
-        function saveToLocalStorage() {
-            try {
-                const data = {
-                    pseudos: pseudos,
-                    history: history,
-                    removeAfterSpin: removeAfterSpin,
-                    spinDuration: spinDuration
-                };
-                localStorage.setItem('wheelData', JSON.stringify(data));
-            } catch (e) {
-                console.warn('Impossible de sauvegarder:', e);
-                showFeedback('Attention: données non sauvegardées');
-            }
-        }
-
-        // Charger depuis localStorage
-        function loadFromLocalStorage() {
-            const data = localStorage.getItem('wheelData');
-            if (data) {
-                try {
-                    const parsed = JSON.parse(data);
-                    pseudos = parsed.pseudos || [];
-                    history = parsed.history || [];
-                    removeAfterSpin = parsed.removeAfterSpin || false;
-                    spinDuration = parsed.spinDuration || 4.0;
-                    
-                    // Mettre à jour l'UI
-                    spinDurationInput.value = spinDuration;
-                    durationValue.textContent = spinDuration.toFixed(1);
-                    setRemoveAfterSpin(removeAfterSpin);
-                    updateHistory();
-                } catch (e) {
-                    console.error('Erreur de chargement:', e);
-                }
-            }
-        }
+        // SUPPRIMER TOUTES LES FONCTIONS DE SAUVEGARDE localStorage
+        // Les fonctions saveToLocalStorage() et loadFromLocalStorage() ont été supprimées
 
         // Rendre les fonctions globales pour les événements onclick
         window.changeColor = changeColor;
