@@ -19,7 +19,7 @@
             --secondary-color: #2C2F33;
             --accent-color: #7289DA;
             --background-color: #f5f7fa;
-            --text-color: #333;
+            --text-color: #2C2F33;
             --light-gray: #e0e0e0;
             --success-color: #43b581;
             --danger-color: #f04747;
@@ -110,7 +110,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 0 0 10px var(--primary-color), 0 0 30px rgba(0, 0, 0, 0.2);
-            transition: transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99);
+            transition: transform 4s cubic-bezier(0.2, 0.8, 0.3, 1);
             background-color: white;
         }
 
@@ -168,7 +168,7 @@
 
         .pseudo-label {
             position: absolute;
-            color: var(--primary-color);
+            color: white;
             font-weight: bold;
             font-size: 18px;
             white-space: nowrap;
@@ -176,6 +176,7 @@
             z-index: 10;
             text-align: center;
             transform-origin: 0 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
         .controls {
@@ -198,6 +199,11 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.3s ease;
+        }
+
+        .btn:focus, .pseudo-color:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
         }
 
         .btn-primary {
@@ -264,6 +270,10 @@
         .pseudo-name {
             flex-grow: 1;
             font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
         }
 
         .pseudo-actions {
@@ -361,6 +371,13 @@
                     <button id="clear-all-btn" class="btn btn-danger">
                         <i class="fas fa-trash-alt"></i> Tout effacer
                     </button>
+                    <button id="export-btn" class="btn btn-secondary">
+                        <i class="fas fa-download"></i> Exporter
+                    </button>
+                    <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">
+                        <i class="fas fa-upload"></i> Importer
+                    </label>
+                    <input type="file" id="import-file" accept=".json" style="display: none;">
                 </div>
 
                 <div id="pseudo-list-container" class="pseudo-list">
@@ -399,6 +416,14 @@
                         </button>
                     </div>
                 </div>
+                <div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 10px;">Options de rotation</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="spin-duration" style="flex: 1;">Durée (secondes):</label>
+                        <input type="range" id="spin-duration" min="2" max="8" step="0.5" value="4" style="flex: 2;">
+                        <span id="duration-value" style="flex: 0.5; text-align: center;">4.0</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -420,6 +445,7 @@
         let removeAfterSpin = false;
         let isSpinning = false;
         let currentRotation = 0;
+        let spinDuration = 4.0;
 
         // Couleurs pour les pseudos dans la liste
         const colors = [
@@ -435,6 +461,15 @@
         const historyList = document.getElementById('history-list');
         const spinCenter = document.getElementById('spin-center');
         const spinBtn = document.getElementById('spin-btn');
+        const spinDurationInput = document.getElementById('spin-duration');
+        const durationValue = document.getElementById('duration-value');
+
+        // Fonction d'échappement HTML
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -445,11 +480,21 @@
             // Événements
             document.getElementById('add-pseudos-btn').addEventListener('click', addPseudosFromInput);
             document.getElementById('clear-all-btn').addEventListener('click', clearAllPseudos);
+            document.getElementById('export-btn').addEventListener('click', exportData);
+            document.getElementById('import-file').addEventListener('change', importData);
             spinBtn.addEventListener('click', spinWheel);
             document.getElementById('reset-wheel-btn').addEventListener('click', resetWheel);
             spinCenter.addEventListener('click', spinWheel);
             document.getElementById('keep-after-spin').addEventListener('click', () => setRemoveAfterSpin(false));
             document.getElementById('remove-after-spin').addEventListener('click', () => setRemoveAfterSpin(true));
+            
+            // Gestion de la durée de rotation
+            spinDurationInput.addEventListener('input', function() {
+                spinDuration = parseFloat(this.value);
+                durationValue.textContent = spinDuration.toFixed(1);
+                wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+                saveToLocalStorage();
+            });
             
             // Ajouter des exemples si vide
             if (pseudos.length === 0) {
@@ -518,12 +563,12 @@
                 html += `
                 <div class="pseudo-item" data-id="${pseudo.id}">
                     <div style="display: flex; align-items: center;">
-                        <div class="pseudo-color" style="background-color: ${pseudo.color};" 
-                             onclick="changeColor('${pseudo.id}')" title="Cliquer pour changer la couleur"></div>
-                        <span class="pseudo-name">${pseudo.name}</span>
+                        <div class="pseudo-color" style="background-color: ${escapeHTML(pseudo.color)};" 
+                             onclick="changeColor('${escapeHTML(pseudo.id)}')" title="Cliquer pour changer la couleur"></div>
+                        <span class="pseudo-name">${escapeHTML(pseudo.name)}</span>
                     </div>
                     <div class="pseudo-actions">
-                        <button onclick="removePseudo('${pseudo.id}')" title="Retirer de la roue">
+                        <button onclick="removePseudo('${escapeHTML(pseudo.id)}')" title="Retirer de la roue">
                             <i class="fas fa-times" style="color: var(--danger-color);"></i>
                         </button>
                     </div>
@@ -572,6 +617,7 @@
             const enabledPseudos = pseudos.filter(p => p.enabled);
 
             if (enabledPseudos.length === 0) {
+                wheel.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; text-align: center; font-size: 1.2rem;">Ajoutez des pseudos</div>';
                 spinCenter.innerHTML = 'AJOUTEZ<br>DES PSEUDOS';
                 spinBtn.disabled = true;
                 return;
@@ -583,6 +629,19 @@
             // Créer les lignes de séparation et les labels
             enabledPseudos.forEach((pseudo, index) => {
                 const angle = index * segmentAngle;
+                
+                // Segment coloré
+                const segment = document.createElement('div');
+                segment.style.position = 'absolute';
+                segment.style.width = '100%';
+                segment.style.height = '100%';
+                segment.style.background = `conic-gradient(
+                    transparent ${angle}deg,
+                    ${pseudo.color}40 ${angle}deg,
+                    ${pseudo.color}40 ${angle + segmentAngle}deg,
+                    transparent ${angle + segmentAngle}deg
+                )`;
+                wheel.appendChild(segment);
                 
                 // Ligne de séparation
                 const line = document.createElement('div');
@@ -622,7 +681,7 @@
             spinCenter.innerHTML = 'TOURNEZ!';
         }
 
-        // LA LOGIQUE SIMPLE ET CORRECTE
+        // Faire tourner la roue (CORRIGÉ)
         function spinWheel() {
             if (isSpinning || pseudos.length === 0) return;
             
@@ -634,40 +693,42 @@
             spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours...';
             spinCenter.innerHTML = '...';
             
-            // 1. Choisir un segment au hasard (c'est le segment qui sera sous la flèche)
+            // Réinitialiser la transition pour repartir de la position actuelle
+            wheel.style.transition = 'none';
+            
+            // Normaliser la rotation actuelle entre 0 et 360
+            const normalizedCurrentRotation = currentRotation % 360;
+            wheel.style.transform = `rotate(${normalizedCurrentRotation}deg)`;
+            
+            // Forcer un reflow pour appliquer la rotation immédiate
+            void wheel.offsetWidth;
+            
+            // Réactiver la transition
+            wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+            
+            // 1. Choisir un segment au hasard
             const selectedIndex = Math.floor(Math.random() * enabledPseudos.length);
             const selectedPseudo = enabledPseudos[selectedIndex];
             const segmentAngle = 360 / enabledPseudos.length;
             
             // 2. Calculer où s'arrêter dans ce segment
-            // Le segment commence à : selectedIndex * segmentAngle
-            // On veut s'arrêter quelque part DANS le segment (pas sur les bords)
             const segmentStart = selectedIndex * segmentAngle;
-            
-            // Choisir un point aléatoire dans le segment (éviter les 10% du début et de la fin)
             const margin = segmentAngle * 0.1;
             const randomPositionInSegment = segmentStart + margin + (Math.random() * (segmentAngle - 2 * margin));
             
-            // 3. Faire plusieurs tours + s'arrêter à cette position
+            // 3. Calculer la rotation totale (plusieurs tours + position)
             const spins = 5;
-            const totalAngle = spins * 360 + randomPositionInSegment;
+            const targetRotation = -(spins * 360 + randomPositionInSegment);
             
-            // 4. La roue doit tourner de -totalAngle pour que ce point arrive en haut
-            const wheelRotation = -totalAngle;
+            // 4. Ajouter à la rotation actuelle normalisée
+            const newRotation = normalizedCurrentRotation + targetRotation;
             
-            // Animer la rotation
-            wheel.style.transform = `rotate(${wheelRotation}deg)`;
-            currentRotation = wheelRotation;
+            // Appliquer la rotation
+            wheel.style.transform = `rotate(${newRotation}deg)`;
+            currentRotation = newRotation;
             
             // Afficher le résultat après l'animation
             setTimeout(() => {
-                // DEBUG: Vérifier la logique
-                console.log(`Segment sélectionné: ${selectedIndex} (${selectedPseudo.name})`);
-                console.log(`Segment angle: ${segmentAngle}°`);
-                console.log(`Segment start: ${segmentStart}°`);
-                console.log(`Random position in segment: ${randomPositionInSegment}°`);
-                console.log(`Wheel rotated to: ${wheelRotation}°`);
-                
                 selectedPseudoDisplay.textContent = selectedPseudo.name;
                 selectedPseudoDisplay.style.color = selectedPseudo.color;
                 selectedPseudoDisplay.style.textShadow = `2px 2px 4px ${selectedPseudo.color}40`;
@@ -685,13 +746,22 @@
                 spinBtn.innerHTML = '<i class="fas fa-play"></i> Tourner la roue';
                 spinCenter.innerHTML = 'TOURNEZ!';
                 showFeedback(`${selectedPseudo.name} a été sélectionné !`);
-            }, 4000);
+            }, spinDuration * 1000);
         }
 
         // Réinitialiser la roue
         function resetWheel() {
+            // Réinitialiser sans transition
+            wheel.style.transition = 'none';
             wheel.style.transform = 'rotate(0deg)';
             currentRotation = 0;
+            
+            // Forcer un reflow
+            void wheel.offsetWidth;
+            
+            // Réactiver la transition
+            wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+            
             selectedPseudoDisplay.textContent = 'La roue n\'a pas encore été tournée';
             selectedPseudoDisplay.style.color = '';
             selectedPseudoDisplay.style.textShadow = '';
@@ -701,7 +771,8 @@
         function addToHistory(pseudo) {
             const now = new Date();
             const time = now.getHours().toString().padStart(2, '0') + ':' + 
-                        now.getMinutes().toString().padStart(2, '0');
+                        now.getMinutes().toString().padStart(2, '0') + ':' +
+                        now.getSeconds().toString().padStart(2, '0');
             
             history.unshift({
                 name: pseudo.name,
@@ -727,7 +798,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${item.color};"></div>
-                        <span style="font-weight: bold;">${item.name}</span>
+                        <span style="font-weight: bold;">${escapeHTML(item.name)}</span>
                     </div>
                     <span style="color: #666; font-size: 0.9rem;">${item.time}</span>
                 </div>
@@ -753,6 +824,65 @@
             saveToLocalStorage();
         }
 
+        // Exporter les données
+        function exportData() {
+            const data = {
+                pseudos: pseudos,
+                history: history,
+                removeAfterSpin: removeAfterSpin,
+                spinDuration: spinDuration
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'roue-discord-data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showFeedback('Données exportées avec succès');
+        }
+
+        // Importer les données
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    pseudos = data.pseudos || [];
+                    history = data.history || [];
+                    removeAfterSpin = data.removeAfterSpin || false;
+                    spinDuration = data.spinDuration || 4.0;
+                    
+                    // Mettre à jour l'UI
+                    spinDurationInput.value = spinDuration;
+                    durationValue.textContent = spinDuration.toFixed(1);
+                    setRemoveAfterSpin(removeAfterSpin);
+                    
+                    updatePseudoList();
+                    updateWheel();
+                    updateHistory();
+                    resetWheel();
+                    saveToLocalStorage();
+                    
+                    showFeedback('Données importées avec succès');
+                } catch (error) {
+                    console.error('Erreur d\'importation:', error);
+                    showFeedback('Erreur: fichier invalide');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Réinitialiser l'input file
+            event.target.value = '';
+        }
+
         // Afficher un message temporaire
         function showFeedback(message) {
             const existingFeedback = document.querySelector('.feedback-message');
@@ -771,6 +901,7 @@
                 box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                 z-index: 1000;
                 font-weight: bold;
+                transition: opacity 0.3s;
             `;
             
             feedback.textContent = message;
@@ -778,21 +909,27 @@
             
             setTimeout(() => {
                 feedback.style.opacity = '0';
-                feedback.style.transition = 'opacity 0.3s';
                 setTimeout(() => feedback.remove(), 300);
             }, 2000);
         }
 
-        // Sauvegarder
+        // Sauvegarder dans localStorage
         function saveToLocalStorage() {
-            localStorage.setItem('wheelData', JSON.stringify({
-                pseudos: pseudos,
-                history: history,
-                removeAfterSpin: removeAfterSpin
-            }));
+            try {
+                const data = {
+                    pseudos: pseudos,
+                    history: history,
+                    removeAfterSpin: removeAfterSpin,
+                    spinDuration: spinDuration
+                };
+                localStorage.setItem('wheelData', JSON.stringify(data));
+            } catch (e) {
+                console.warn('Impossible de sauvegarder:', e);
+                showFeedback('Attention: données non sauvegardées');
+            }
         }
 
-        // Charger
+        // Charger depuis localStorage
         function loadFromLocalStorage() {
             const data = localStorage.getItem('wheelData');
             if (data) {
@@ -801,6 +938,11 @@
                     pseudos = parsed.pseudos || [];
                     history = parsed.history || [];
                     removeAfterSpin = parsed.removeAfterSpin || false;
+                    spinDuration = parsed.spinDuration || 4.0;
+                    
+                    // Mettre à jour l'UI
+                    spinDurationInput.value = spinDuration;
+                    durationValue.textContent = spinDuration.toFixed(1);
                     setRemoveAfterSpin(removeAfterSpin);
                     updateHistory();
                 } catch (e) {
