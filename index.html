@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roue Discord Aléatoire</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎡</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -151,6 +152,50 @@
             border-left: 20px solid transparent;
             border-right: 20px solid transparent;
             border-top: 40px solid var(--danger-color);
+        }
+
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0% 0%;
+            overflow: hidden;
+        }
+
+        .wheel-segment::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: inherit;
+            transform-origin: 0% 0%;
+            transform: skewY(-60deg);
+        }
+
+        .wheel-segment-text {
+            position: absolute;
+            top: 50%;
+            left: 65%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .separator {
+            position: absolute;
+            width: 2px;
+            height: 50%;
+            top: 0;
+            left: 50%;
+            background-color: white;
+            transform-origin: 50% 100%;
+            z-index: 10;
         }
 
         .controls {
@@ -310,51 +355,6 @@
             header h1 {
                 font-size: 2rem;
             }
-        }
-
-        /* NOUVEAUX STYLES POUR LES SEGMENTS - Version corrigée */
-        .wheel-segment {
-            position: absolute;
-            width: 50%;
-            height: 50%;
-            top: 50%;
-            left: 50%;
-            transform-origin: 0% 0%;
-            overflow: hidden;
-        }
-
-        .wheel-segment::before {
-            content: "";
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: inherit;
-            transform-origin: 0% 0%;
-            transform: skewY(-60deg);
-        }
-
-        .wheel-segment-text {
-            position: absolute;
-            top: 50%;
-            left: 65%;
-            transform: translate(-50%, -50%) rotate(90deg);
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
-            white-space: nowrap;
-            pointer-events: none;
-        }
-
-        .separator {
-            position: absolute;
-            width: 2px;
-            height: 50%;
-            top: 0;
-            left: 50%;
-            background-color: white;
-            transform-origin: 50% 100%;
-            z-index: 10;
         }
     </style>
 </head>
@@ -582,7 +582,7 @@
             }
         }
 
-        // NOUVELLE FONCTION updateWheel - Version corrigée
+        // Mettre à jour la roue
         function updateWheel() {
             wheel.innerHTML = '';
             const enabledPseudos = pseudos.filter(p => p.enabled);
