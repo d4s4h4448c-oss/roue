@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roue Aléatoire Discord</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #5865F2;
+            --secondary-color: #2C2F33;
+            --accent-color: #7289DA;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --light-gray: #e0e0e0;
+            --success-color: #43b581;
+            --danger-color: #f04747;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .wheel-container {
+            flex: 2;
+            min-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel h2 i {
+            font-size: 1.5rem;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            margin: 20px auto;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 0 10px var(--primary-color), 0 0 30px rgba(0, 0, 0, 0.2);
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99);
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background-color: white;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            border: 5px solid var(--primary-color);
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 60px;
+            z-index: 20;
+        }
+
+        .wheel-pointer:before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid var(--danger-color);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(88, 101, 242, 0.3);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #3ca374;
+            transform: translateY(-3px);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d63c3c;
+            transform: translateY(-3px);
+        }
+
+        .btn-secondary {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+            transform: translateY(-3px);
+        }
+
+        #pseudo-input {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid var(--light-gray);
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        #pseudo-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .input-hint {
+            display: block;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .pseudo-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--light-gray);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+
+        .pseudo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            transition: all 0.2s ease;
+        }
+
+        .pseudo-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .pseudo-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .pseudo-name {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+
+        .pseudo-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pseudo-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .pseudo-actions button:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .result {
+            text-align: center;
+            padding: 25px;
+            background-color: white;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .result h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        #selected-pseudo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            margin: 20px 0;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .history h4 {
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .history-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            background-color: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .instructions h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .instructions-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .instruction-item {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .instruction-item h3 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .wheel-container, .panel {
+                min-width: 100%;
+            }
+            
+            .wheel-wrapper {
+                width: 400px;
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .wheel-wrapper {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            
+            header h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        .spin-animation {
+            animation: spin 0.3s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-dharmachakra"></i> Roue Discord Aléatoire</h1>
+            <p>Générez des sélections aléatoires parmi vos amis Discord avec cette roue interactive. Personnalisez les couleurs et gérez les participants facilement.</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2><i class="fas fa-users"></i> Gestion des Pseudos</h2>
+                <p class="input-hint">Entrez un pseudo par ligne ou collez une liste de pseudos depuis Discord</p>
+                <textarea id="pseudo-input" placeholder="Exemple:
+JeanClaude
+Gemini
+Alice
+Bob
+Charlie
+..."></textarea>
+                
+                <div class="controls">
+                    <button id="add-pseudos-btn" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Ajouter à la roue
+                    </button>
+                    <button id="clear-all-btn" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Tout effacer
+                    </button>
+                </div>
+
+                <div id="pseudo-list-container" class="pseudo-list">
+                    <!-- Les pseudos seront ajoutés ici dynamiquement -->
+                    <div class="empty-list-message" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
+                        Aucun pseudo ajouté pour le moment. Ajoutez des pseudos pour commencer !
+                    </div>
+                </div>
+
+                <div class="controls" style="margin-top: 20px;">
+                    <button id="generate-colors-btn" class="btn btn-secondary">
+                        <i class="fas fa-palette"></i> Générer des couleurs
+                    </button>
+                </div>
+            </div>
+
+            <div class="wheel-container">
+                <h2><i class="fas fa-dharmachakra"></i> Roue de Sélection</h2>
+                <div class="wheel-wrapper">
+                    <div id="wheel"></div>
+                    <div class="wheel-center">TOURNEZ!</div>
+                    <div class="wheel-pointer"></div>
+                </div>
+                
+                <div class="controls">
+                    <button id="spin-btn" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Tourner la roue
+                    </button>
+                    <button id="reset-wheel-btn" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Réinitialiser
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2><i class="fas fa-cog"></i> Paramètres</h2>
+                <div style="margin-bottom: 25px;">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 15px;">Action après sélection</h3>
+                    <div style="display: flex; gap: 15px;">
+                        <button id="keep-after-spin" class="btn btn-secondary" style="flex: 1;">
+                            <i class="fas fa-check-circle"></i> Garder dans la roue
+                        </button>
+                        <button id="remove-after-spin" class="btn" style="flex: 1; background-color: #e9e9e9;">
+                            <i class="fas fa-minus-circle"></i> Retirer de la roue
+                        </button>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                        Choisissez si le pseudo sélectionné reste dans la roue ou est retiré après chaque tirage.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 15px;">Dernière sélection</h3>
+                    <div id="last-selection" style="padding: 20px; background-color: #f9f9f9; border-radius: 10px; text-align: center; font-size: 1.8rem; font-weight: bold; min-height: 80px; display: flex; align-items: center; justify-content: center;">
+                        En attente...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result">
+            <h3><i class="fas fa-trophy"></i> Résultat de la Sélection</h3>
+            <div id="selected-pseudo">La roue n'a pas encore été tournée</div>
+            
+            <div class="controls">
+                <button id="select-again-btn" class="btn btn-success" disabled>
+                    <i class="fas fa-redo"></i> Sélectionner à nouveau
+                </button>
+            </div>
+
+            <div class="history">
+                <h4>Historique des sélections</h4>
+                <div id="history-list">
+                    <div class="history-item" style="color: #999; font-style: italic;">
+                        Aucune sélection encore effectuée
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h2><i class="fas fa-info-circle"></i> Comment utiliser cette roue</h2>
+            <div class="instructions-list">
+                <div class="instruction-item">
+                    <h3><i class="fas fa-keyboard"></i> Ajouter des pseudos</h3>
+                    <p>Copiez-collez une liste de pseudos depuis Discord (un par ligne) dans la zone de texte, ou écrivez-les directement. Cliquez sur "Ajouter à la roue" pour les inclure.</p>
+                </div>
+                <div class="instruction-item">
+                    <h3><i class="fas fa-paint-brush"></i> Personnaliser les couleurs</h3>
+                    <p>Chaque pseudo a une couleur attribuée automatiquement. Cliquez sur la couleur à côté d'un pseudo pour la modifier. Utilisez "Générer des couleurs" pour tout regénérer.</p>
+                </div>
+                <div class="instruction-item">
+                    <h3><i class="fas fa-cogs"></i> Contrôler la sélection</h3>
+                    <p>Choisissez si les pseudos sélectionnés doivent être retirés de la roue ou non. Utilisez les boutons "Retirer" à côté de chaque pseudo pour un contrôle individuel.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Roue Discord Aléatoire &copy; 2023 - Outil parfait pour les tirages au sort, jeux et sélections équitables</p>
+        </footer>
+    </div>
+
+    <script>
+        // Variables globales
+        let pseudos = [];
+        let selectedPseudos = [];
+        let history = [];
+        let removeAfterSpin = false;
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        // Couleurs prédéfinies pour les segments de la roue
+        const predefinedColors = [
+            '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#073B4C',
+            '#7209B7', '#3A86FF', '#FB5607', '#8338EC', '#FF006E', '#8AC926',
+            '#1982C4', '#6A4C93', '#F15BB5', '#9B5DE5', '#00BBF9', '#00F5D4'
+        ];
+
+        // Éléments DOM
+        const pseudoInput = document.getElementById('pseudo-input');
+        const addPseudosBtn = document.getElementById('add-pseudos-btn');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const pseudoListContainer = document.getElementById('pseudo-list-container');
+        const spinBtn = document.getElementById('spin-btn');
+        const resetWheelBtn = document.getElementById('reset-wheel-btn');
+        const wheel = document.getElementById('wheel');
+        const selectedPseudoDisplay = document.getElementById('selected-pseudo');
+        const selectAgainBtn = document.getElementById('select-again-btn');
+        const lastSelectionDisplay = document.getElementById('last-selection');
+        const historyList = document.getElementById('history-list');
+        const generateColorsBtn = document.getElementById('generate-colors-btn');
+        const keepAfterSpinBtn = document.getElementById('keep-after-spin');
+        const removeAfterSpinBtn = document.getElementById('remove-after-spin');
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger les pseudos depuis le stockage local si disponible
+            loadFromLocalStorage();
+            
+            // Mettre à jour l'affichage initial
+            updatePseudoList();
+            updateWheel();
+            
+            // Événements
+            addPseudosBtn.addEventListener('click', addPseudosFromInput);
+            clearAllBtn.addEventListener('click', clearAllPseudos);
+            spinBtn.addEventListener('click', spinWheel);
+            resetWheelBtn.addEventListener('click', resetWheel);
+            selectAgainBtn.addEventListener('click', selectAgain);
+            generateColorsBtn.addEventListener('click', generateRandomColors);
+            keepAfterSpinBtn.addEventListener('click', () => setRemoveAfterSpin(false));
+            removeAfterSpinBtn.addEventListener('click', () => setRemoveAfterSpin(true));
+            
+            // Ajouter quelques pseudos d'exemple au premier chargement
+            if (pseudos.length === 0) {
+                addExamplePseudos();
+            }
+        });
+
+        // Ajouter des pseudos d'exemple
+        function addExamplePseudos() {
+            const examplePseudos = [
+                "JeanClaude", "Gemini", "Alice", "Bob", "Charlie", 
+                "David", "Eve", "Frank", "Grace", "Henry"
+            ];
+            
+            examplePseudos.forEach(pseudo => {
+                addPseudo(pseudo);
+            });
+            
+            updatePseudoList();
+            updateWheel();
+            saveToLocalStorage();
+        }
+
+        // Ajouter des pseudos depuis l'input
+        function addPseudosFromInput() {
+            const inputText = pseudoInput.value.trim();
+            if (!inputText) return;
+            
+            const newPseudos = inputText.split('\n')
+                .map(pseudo => pseudo.trim())
+                .filter(pseudo => pseudo.length > 0);
+            
+            newPseudos.forEach(pseudo => {
+                // Vérifier si le pseudo n'existe pas déjà
+                if (!pseudos.some(p => p.name.toLowerCase() === pseudo.toLowerCase())) {
+                    addPseudo(pseudo);
+                }
+            });
+            
+            // Effacer l'input
+            pseudoInput.value = '';
+            
+            updatePseudoList();
+            updateWheel();
+            saveToLocalStorage();
+            
+            // Afficher un feedback
+            showFeedback(`${newPseudos.length} pseudos ajoutés à la roue!`);
+        }
+
+        // Ajouter un pseudo avec une couleur aléatoire
+        function addPseudo(name) {
+            const colorIndex = pseudos.length % predefinedColors.length;
+            pseudos.push({
+                id: Date.now() + Math.random(),
+                name: name,
+                color: predefinedColors[colorIndex],
+                enabled: true
+            });
+        }
+
+        // Mettre à jour la liste des pseudos dans l'interface
+        function updatePseudoList() {
+            if (pseudos.length === 0) {
+                pseudoListContainer.innerHTML = '<div class="empty-list-message" style="text-align: center; padding: 30px; color: #999; font-style: italic;">Aucun pseudo ajouté pour le moment. Ajoutez des pseudos pour commencer !</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            pseudos.forEach((pseudo, index) => {
+                html += `
+                <div class="pseudo-item" data-id="${pseudo.id}">
+                    <div style="display: flex; align-items: center;">
+                        <div class="pseudo-color" style="background-color: ${pseudo.color};" 
+                             onclick="changeColor('${pseudo.id}')" title="Cliquer pour changer la couleur"></div>
+                        <span class="pseudo-name">${pseudo.name}</span>
+                    </div>
+                    <div class="pseudo-actions">
+                        <button onclick="removePseudo('${pseudo.id}')" title="Retirer de la roue">
+                            <i class="fas fa-minus-circle" style="color: var(--danger-color);"></i>
+                        </button>
+                        <button onclick="togglePseudo('${pseudo.id}')" title="${pseudo.enabled ? 'Désactiver' : 'Activer'}">
+                            <i class="fas ${pseudo.enabled ? 'fa-eye' : 'fa-eye-slash'}" style="color: ${pseudo.enabled ? 'var(--success-color)' : '#888'};"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            });
+            
+            pseudoListContainer.innerHTML = html;
+        }
+
+        // Changer la couleur d'un pseudo
+        function changeColor(id) {
+            const pseudo = pseudos.find(p => p.id === id);
+            if (!pseudo) return;
+            
+            // Générer une couleur aléatoire
+            const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            pseudo.color = randomColor;
+            
+            updatePseudoList();
+            updateWheel();
+            saveToLocalStorage();
+        }
+
+        // Générer des couleurs aléatoires pour tous les pseudos
+        function generateRandomColors() {
+            pseudos.forEach(pseudo => {
+                const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+                pseudo.color = randomColor;
+            });
+            
+            updatePseudoList();
+            updateWheel();
+            saveToLocalStorage();
+            
+            showFeedback("Couleurs regénérées avec succès!");
+        }
+
+        // Retirer un pseudo de la liste
+        function removePseudo(id) {
+            pseudos = pseudos.filter(p => p.id !== id);
+            updatePseudoList();
+            updateWheel();
+            saveToLocalStorage();
+            
+            showFeedback("Pseudo retiré de la roue");
+        }
+
+        // Activer/désactiver un pseudo
+        function togglePseudo(id) {
+            const pseudo = pseudos.find(p => p.id === id);
+            if (pseudo) {
+                pseudo.enabled = !pseudo.enabled;
+                updatePseudoList();
+                updateWheel();
+                saveToLocalStorage();
+                
+                showFeedback(`Pseudo ${pseudo.enabled ? 'activé' : 'désactivé'}`);
+            }
+        }
+
+        // Effacer tous les pseudos
+        function clearAllPseudos() {
+            if (pseudos.length === 0) return;
+            
+            if (confirm("Êtes-vous sûr de vouloir effacer tous les pseudos ?")) {
+                pseudos = [];
+                updatePseudoList();
+                updateWheel();
+                saveToLocalStorage();
+                
+                showFeedback("Tous les pseudos ont été effacés");
+            }
+        }
+
+        // Mettre à jour la roue
+        function updateWheel() {
+            wheel.innerHTML = '';
+            
+            // Filtrer les pseudos activés
+            const enabledPseudos = pseudos.filter(p => p.enabled);
+            
+            if (enabledPseudos.length === 0) {
+                wheel.style.background = '#f0f0f0';
+                wheel.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #888; font-weight: bold;">Ajoutez des pseudos<br>pour commencer</div>';
+                spinBtn.disabled = true;
+                return;
+            }
+            
+            spinBtn.disabled = false;
+            
+            const anglePerItem = 360 / enabledPseudos.length;
+            
+            enabledPseudos.forEach((pseudo, index) => {
+                const segment = document.createElement('div');
+                segment.style.position = 'absolute';
+                segment.style.width = '100%';
+                segment.style.height = '100%';
+                segment.style.clipPath = `conic-gradient(from ${index * anglePerItem}deg at 50% 50%, ${pseudo.color} 0deg ${anglePerItem}deg, transparent ${anglePerItem}deg)`;
+                segment.style.transformOrigin = 'center';
+                
+                // Ajouter le texte du pseudo
+                const text = document.createElement('div');
+                text.style.position = 'absolute';
+                text.style.top = '50%';
+                text.style.left = '50%';
+                text.style.transform = `rotate(${index * anglePerItem + anglePerItem/2}deg) translate(0, -180px) rotate(-${index * anglePerItem + anglePerItem/2}deg)`;
+                text.style.color = '#FFF';
+                text.style.fontWeight = 'bold';
+                text.style.textShadow = '1px 1px 3px rgba(0,0,0,0.7)';
+                text.style.fontSize = '1.2rem';
+                text.style.whiteSpace = 'nowrap';
+                text.textContent = pseudo.name;
+                
+                segment.appendChild(text);
+                wheel.appendChild(segment);
+            });
+        }
+
+        // Tourner la roue
+        function spinWheel() {
+            if (isSpinning) return;
+            
+            const enabledPseudos = pseudos.filter(p => p.enabled);
+            if (enabledPseudos.length === 0) return;
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+            selectAgainBtn.disabled = true;
+            
+            // Générer un angle de rotation aléatoire
+            const spins = 5 + Math.random() * 3; // 5 à 8 tours complets
+            const randomIndex = Math.floor(Math.random() * enabledPseudos.length);
+            const anglePerItem = 360 / enabledPseudos.length;
+            
+            // Calculer l'angle pour que le segment sélectionné s'aligne avec le pointeur
+            const targetAngle = 3600 + (360 - (randomIndex * anglePerItem)) - (anglePerItem / 2);
+            
+            // Appliquer la rotation
+            wheel.style.transform = `rotate(${currentRotation + targetAngle}deg)`;
+            currentRotation += targetAngle;
+            
+            // Animation de la roue centrale
+            const wheelCenter = document.querySelector('.wheel-center');
+            wheelCenter.classList.add('spin-animation');
+            wheelCenter.textContent = '...';
+            
+            // Attendre la fin de l'animation pour afficher le résultat
+            setTimeout(() => {
+                const selectedPseudo = enabledPseudos[randomIndex];
+                
+                // Afficher le résultat
+                selectedPseudoDisplay.textContent = selectedPseudo.name;
+                selectedPseudoDisplay.style.color = selectedPseudo.color;
+                selectedPseudoDisplay.style.textShadow = '2px 2px 4px rgba(0,0,0,0.1)';
+                
+                // Mettre à jour la dernière sélection
+                lastSelectionDisplay.textContent = selectedPseudo.name;
+                lastSelectionDisplay.style.color = selectedPseudo.color;
+                
+                // Ajouter à l'historique
+                addToHistory(selectedPseudo);
+                
+                // Retirer le pseudo si nécessaire
+                if (removeAfterSpin) {
+                    removePseudo(selectedPseudo.id);
+                }
+                
+                // Réactiver les boutons
+                isSpinning = false;
+                spinBtn.disabled = false;
+                selectAgainBtn.disabled = false;
+                
+                // Arrêter l'animation de la roue centrale
+                wheelCenter.classList.remove('spin-animation');
+                wheelCenter.textContent = 'TOURNEZ!';
+                
+                showFeedback(`${selectedPseudo.name} a été sélectionné!`);
+            }, 4000);
+        }
+
+        // Réinitialiser la roue
+        function resetWheel() {
+            wheel.style.transform = 'rotate(0deg)';
+            currentRotation = 0;
+            selectedPseudoDisplay.textContent = 'La roue n\'a pas encore été tournée';
+            selectedPseudoDisplay.style.color = '';
+            lastSelectionDisplay.textContent = 'En attente...';
+            lastSelectionDisplay.style.color = '';
+            
+            showFeedback("Roue réinitialisée");
+        }
+
+        // Sélectionner à nouveau le dernier résultat
+        function selectAgain() {
+            if (selectedPseudos.length === 0) return;
+            
+            const lastSelected = selectedPseudos[selectedPseudos.length - 1];
+            selectedPseudoDisplay.textContent = lastSelected.name;
+            selectedPseudoDisplay.style.color = lastSelected.color;
+            
+            showFeedback(`${lastSelected.name} resélectionné!`);
+        }
+
+        // Ajouter à l'historique
+        function addToHistory(pseudo) {
+            selectedPseudos.push(pseudo);
+            
+            // Ajouter à l'historique avec timestamp
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            
+            history.unshift({
+                pseudo: pseudo.name,
+                color: pseudo.color,
+                time: timeString
+            });
+            
+            // Limiter l'historique à 10 éléments
+            if (history.length > 10) {
+                history.pop();
+            }
+            
+            updateHistoryList();
+            saveToLocalStorage();
+        }
+
+        // Mettre à jour la liste d'historique
+        function updateHistoryList() {
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="history-item" style="color: #999; font-style: italic;">Aucune sélection encore effectuée</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            history.forEach(item => {
+                html += `
+                <div class="history-item">
+                    <span>${item.pseudo}</span>
+                    <span style="color: #666; font-size: 0.9rem;">${item.time}</span>
+                </div>
+                `;
+            });
+            
+            historyList.innerHTML = html;
+        }
+
+        // Définir le mode de retrait après sélection
+        function setRemoveAfterSpin(remove) {
+            removeAfterSpin = remove;
+            
+            if (remove) {
+                removeAfterSpinBtn.classList.add('btn-danger');
+                removeAfterSpinBtn.classList.remove('btn-secondary');
+                keepAfterSpinBtn.classList.remove('btn-primary');
+                keepAfterSpinBtn.classList.add('btn-secondary');
+            } else {
+                keepAfterSpinBtn.classList.add('btn-primary');
+                keepAfterSpinBtn.classList.remove('btn-secondary');
+                removeAfterSpinBtn.classList.remove('btn-danger');
+                removeAfterSpinBtn.classList.add('btn-secondary');
+            }
+            
+            saveToLocalStorage();
+            showFeedback(`Mode ${remove ? 'retrait après sélection' : 'conservation après sélection'} activé`);
+        }
+
+        // Afficher un feedback temporaire
+        function showFeedback(message) {
+            // Créer un élément de feedback
+            const feedback = document.createElement('div');
+            feedback.style.position = 'fixed';
+            feedback.style.bottom = '20px';
+            feedback.style.right = '20px';
+            feedback.style.backgroundColor = 'var(--primary-color)';
+            feedback.style.color = 'white';
+            feedback.style.padding = '15px 25px';
+            feedback.style.borderRadius = '10px';
+            feedback.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+            feedback.style.zIndex = '1000';
+            feedback.style.fontWeight = 'bold';
+            feedback.style.transition = 'all 0.3s ease';
+            feedback.textContent = message;
+            
+            document.body.appendChild(feedback);
+            
+            // Supprimer après 3 secondes
+            setTimeout(() => {
+                feedback.style.opacity = '0';
+                feedback.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    document.body.removeChild(feedback);
+                }, 300);
+            }, 3000);
+        }
+
+        // Sauvegarder dans le stockage local
+        function saveToLocalStorage() {
+            const data = {
+                pseudos: pseudos,
+                history: history,
+                selectedPseudos: selectedPseudos,
+                removeAfterSpin: removeAfterSpin
+            };
+            localStorage.setItem('discordWheelData', JSON.stringify(data));
+        }
+
+        // Charger depuis le stockage local
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('discordWheelData');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    pseudos = data.pseudos || [];
+                    history = data.history || [];
+                    selectedPseudos = data.selectedPseudos || [];
+                    removeAfterSpin = data.removeAfterSpin || false;
+                    
+                    // Mettre à jour l'interface en fonction du mode
+                    setRemoveAfterSpin(removeAfterSpin);
+                    updateHistoryList();
+                } catch (e) {
+                    console.error("Erreur lors du chargement des données:", e);
+                }
+            }
+        }
+
+        // Rendre les fonctions disponibles globalement pour les événements onclick
+        window.changeColor = changeColor;
+        window.removePseudo = removePseudo;
+        window.togglePseudo = togglePseudo;
+    </script>
+</body>
+</html>
