@@ -622,7 +622,7 @@
             spinCenter.innerHTML = 'TOURNEZ!';
         }
 
-        // CORRECTION : Tourner la roue avec la bonne logique de sélection
+        // CORRECTION : Tourner la roue avec la VRAIE bonne logique
         function spinWheel() {
             if (isSpinning || pseudos.length === 0) return;
             
@@ -634,19 +634,26 @@
             spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours...';
             spinCenter.innerHTML = '...';
             
-            // Sélectionner un pseudo aléatoire
+            // 1. Sélectionner un pseudo aléatoire
             const randomIndex = Math.floor(Math.random() * enabledPseudos.length);
             const selectedPseudo = enabledPseudos[randomIndex];
             const segmentAngle = 360 / enabledPseudos.length;
             
-            // CALCUL CORRIGÉ : Le segment qui doit arriver en haut (à la flèche) est celui qui est sélectionné
-            // La flèche est à 0° (en haut), donc on doit faire tourner le segment sélectionné pour qu'il arrive à 0°
-            // Mais comme la roue tourne dans le sens horaire, on ajuste l'angle
+            // 2. Calculer l'angle d'arrêt
+            // On veut que la flèche s'arrête quelque part dans le segment sélectionné
+            // Le segment va de [index * segmentAngle] à [(index + 1) * segmentAngle]
+            // On choisit un point au hasard dans ce segment
+            const minAngle = randomIndex * segmentAngle;
+            const maxAngle = (randomIndex + 1) * segmentAngle;
+            const stopAngle = minAngle + (Math.random() * segmentAngle);
             
+            // 3. Faire plusieurs tours complets + l'angle d'arrêt
             const spins = 5; // Nombre de tours complets
-            // Le segment sélectionné doit arriver à la position 0° (en haut)
-            // On calcule l'angle nécessaire pour que ce segment arrive à 0°
-            const targetAngle = spins * 360 + (360 - (randomIndex * segmentAngle));
+            const totalRotation = spins * 360 + stopAngle;
+            
+            // 4. Inverser le sens (puisque la roue tourne, pas la flèche)
+            // Si la roue tourne de X degrés, la position relative est -X
+            const targetAngle = -totalRotation;
             
             // Animer la rotation
             wheel.style.transform = `rotate(${currentRotation + targetAngle}deg)`;
